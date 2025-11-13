@@ -20,3 +20,5 @@ const connectDB = async () => {
 };
 
 connectDB();
+
+app.listen(PORT, () => console.log(`O servidor está rodando na porta ${PORT}`));
