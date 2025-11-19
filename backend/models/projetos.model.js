@@ -9,4 +9,5 @@ const projetosSchema = new mongoose.Schema({
 });
 
 const Projeto = mongoose.model('Projeto', projetosSchema);
-module.exports = Projeto;
+
+module.exports = { Projeto, projetosSchema };
