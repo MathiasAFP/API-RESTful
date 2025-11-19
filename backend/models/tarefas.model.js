@@ -1,13 +1,11 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
 const tarefasSchema = new mongoose.Schema({
   titulo: String,
-  descricao: String,
+  projeto: { type: mongoose.Schema.Types.ObjectId, ref: "Projetos" },
   status: { type: String, enum: ["Pendente", "Em Andamento", "Concluída"], default: "Pendente" },
   prioridade: { type: String, enum: ["Baixa", "Média", "Alta"], default: "Média" },
-  projetoId: { type: mongoose.Schema.Types.ObjectId, ref: "Projeto" },
-  criadoEm: { type: Date, default: Date.now },
-  concluidoEm: Date
+  criadoEm: { type: Date, default: Date.now }
 });
 
-export default mongoose.model("Tarefas", tarefasSchema);
+module.exports = mongoose.model("Tarefas", tarefasSchema);
