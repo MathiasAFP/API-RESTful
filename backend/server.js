@@ -8,8 +8,6 @@ dotenv.config();
 const app = express();
 const PORT = 3000;
 
-
-
 const connectDB = async () => {
     try {
         await mongoose.connect(process.env.MONGOKEY);
