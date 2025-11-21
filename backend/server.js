@@ -1,20 +1,14 @@
-import express from "express";
-import dotenv from "dotenv";
-import mongoose from "mongoose";
-
-
-dotenv.config();
+const express = require("express");
+const mongoose = require("mongoose");
+require("dotenv").config();
 
 const app = express();
-const PORT = 3000;
+app.use(express.json());
 
-const connectDB = async () => {
-    try {
-        await mongoose.connect(process.env.MONGOKEY);
-        console.log("Conectado No Banco");
-    } catch (error) {
-        console.log("Deu erro na conexão do banco", error)
-    }
-};
+mongoose.connect(process.env.MONGOKEY)
+    .then(() => console.log("MongoDB conectado"))
+    .catch(err => console.log("Erro ao conectar Mongo:", err));
 
-connectDB();
+app.use("/projetos", require("./routes/projetos.routes"));
+
+app.listen(3000, () => console.log("Servidor rodando na porta 3000"));
