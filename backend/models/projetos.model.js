@@ -1,13 +1,9 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const projetosSchema = new mongoose.Schema({
-  nome: { type: String, required: true },
+  nome: String,
   descricao: String,
-  status: { type: String, enum: ["Planejado", "Em Andamento", "Concluído"], default: "Planejado" },
-  prazo: Date,
-  criadoEm: { type: Date, default: Date.now }
+  usuarioId: { type: mongoose.Schema.Types.ObjectId, ref: "Usuario" }
 });
 
-const Projeto = mongoose.model('Projeto', projetosSchema);
-
-module.exports = { Projeto, projetosSchema };
+module.exports = mongoose.model("Projetos", projetosSchema);
