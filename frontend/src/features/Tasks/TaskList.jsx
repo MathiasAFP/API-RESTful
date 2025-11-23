@@ -96,13 +96,11 @@ export default function TaskList() {
         taskData.descricao = formData.descricao.trim();
       }
       
-      if (formData.membroId && formData.membroId.trim() && formData.membroId !== '') {
+      if (formData.membroId && formData.membroId.trim() !== '') {
         taskData.membroId = formData.membroId.trim();
       }
 
-      console.log('Enviando dados da tarefa:', taskData); // Debug
       const newTask = await api.post('/tarefas', taskData);
-      console.log('Tarefa retornada do backend:', newTask); // Debug
       
       // Recarregar tarefas para garantir que os dados populados estejam corretos
       const updatedTasks = await api.get('/tarefas');
@@ -281,20 +279,49 @@ export default function TaskList() {
             >
               <div className="flex-1">
                 <h3 className="font-semibold text-gray-900">{task.titulo || task.title}</h3>
-                {task.membroId && (task.membroId.nome || (typeof task.membroId === 'object' && task.membroId !== null)) ? (
-                  <div className="text-sm text-gray-600 mt-1 space-y-1">
-                    <p>
-                      <span className="font-medium">Responsável:</span> {task.membroId?.nome || 'N/A'}
-                    </p>
-                    {task.membroId?.projetoId && (
-                      <p>
-                        <span className="font-medium">Equipe:</span> {task.membroId.projetoId?.nome || 'N/A'}
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-500 italic mt-1">Sem responsável atribuído</p>
-                )}
+                {(() => {
+                  // Verificar se membroId existe e está populado
+                  const membroId = task.membroId;
+                  
+                  if (membroId) {
+                    // Verificar se é um objeto populado (não apenas um ID string)
+                    if (typeof membroId === 'object' && membroId !== null && !Array.isArray(membroId)) {
+                      // Objeto populado - verificar se tem nome (indica que foi populado corretamente)
+                      if (membroId.nome) {
+                        // Obter nome do projeto/equipe
+                        let projetoNome = null;
+                        if (membroId.projetoId) {
+                          if (typeof membroId.projetoId === 'object' && membroId.projetoId !== null) {
+                            projetoNome = membroId.projetoId.nome;
+                          } else {
+                            projetoNome = membroId.projetoId;
+                          }
+                        }
+                        
+                        return (
+                          <p className="text-sm text-gray-600 mt-1">
+                            <span className="font-medium">Responsável:</span> {membroId.nome}
+                            {projetoNome && (
+                              <span className="ml-4">
+                                <span className="font-medium">Equipe:</span> {projetoNome}
+                              </span>
+                            )}
+                          </p>
+                        );
+                      }
+                      // Objeto mas sem nome - pode ser um objeto vazio ou com apenas _id
+                      // Isso indica que o populate não funcionou ou o membro foi deletado
+                    } else if (typeof membroId === 'string' && membroId.trim() !== '') {
+                      // Apenas ID string - não foi populado
+                      // Isso não deveria acontecer se o backend estiver populando corretamente
+                    }
+                  }
+                  
+                  // Sem membroId ou membroId não populado corretamente
+                  return (
+                    <p className="text-sm text-gray-500 italic mt-1">Sem responsável atribuído</p>
+                  );
+                })()}
                 {task.descricao && (
                   <p className="text-sm text-gray-600 mt-1 line-clamp-2">{task.descricao}</p>
                 )}

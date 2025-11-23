@@ -4,8 +4,23 @@ export default function TaskDetails({ task, onClose }) {
   const taskTitulo = task.titulo || task.title;
   const taskDescricao = task.descricao || task.description;
   const taskStatus = task.status;
-  const memberNome = task.membroId?.nome || 'Sem responsável';
-  const teamNome = task.membroId?.projetoId?.nome || null;
+  
+  // Verificar membroId populado
+  let memberNome = 'Sem responsável';
+  let teamNome = null;
+  
+  if (task.membroId) {
+    if (typeof task.membroId === 'object' && task.membroId !== null && task.membroId.nome) {
+      memberNome = task.membroId.nome;
+      if (task.membroId.projetoId) {
+        if (typeof task.membroId.projetoId === 'object' && task.membroId.projetoId !== null) {
+          teamNome = task.membroId.projetoId.nome;
+        } else {
+          teamNome = task.membroId.projetoId;
+        }
+      }
+    }
+  }
 
   const statusLabels = {
     pending: 'Pendente',
