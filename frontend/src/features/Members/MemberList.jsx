@@ -12,12 +12,27 @@ export default function MemberList() {
   useEffect(() => {
     const handleAddMemberToProject = (event) => {
       const { projetoId, projetoNome } = event.detail;
-      setFormData({ nome: '', projetoId });
+      // Garantir que projetoId seja string para comparação correta
+      const projetoIdStr = projetoId?.toString();
+      setFormData({ nome: '', projetoId: projetoIdStr });
       setShowForm(true);
     };
 
     window.addEventListener('addMemberToProject', handleAddMemberToProject);
     return () => window.removeEventListener('addMemberToProject', handleAddMemberToProject);
+  }, []);
+
+  // Recarregar projetos quando o componente montar ou quando mudar de view
+  useEffect(() => {
+    const fetchProjetos = async () => {
+      try {
+        const data = await api.get('/projetos');
+        setProjetos(data);
+      } catch (error) {
+        console.error('[v0] Erro ao carregar projetos:', error);
+      }
+    };
+    fetchProjetos();
   }, []);
 
   useEffect(() => {
@@ -114,9 +129,10 @@ export default function MemberList() {
               <option value="">Selecione um projeto</option>
               {projetos.map((projeto) => {
                 const projetoId = projeto._id || projeto.id;
+                const projetoIdStr = projetoId?.toString();
                 const projetoNome = projeto.nome || projeto.name;
                 return (
-                  <option key={projetoId} value={projetoId}>
+                  <option key={projetoIdStr} value={projetoIdStr}>
                     {projetoNome}
                   </option>
                 );

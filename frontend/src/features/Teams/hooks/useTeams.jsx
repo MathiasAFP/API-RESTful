@@ -58,5 +58,25 @@ export function useTeams() {
     }
   };
 
-  return { teams, loading, error, handleDelete, handleCreate };
+  const handleUpdate = async (id, team) => {
+    try {
+      const updatedTeam = await api.put(`/projetos/${id}`, {
+        nome: team.nome || team.name,
+        descricao: team.descricao || team.description
+      });
+      setTeams(teams.map(t => (t._id === id || t.id === id) ? updatedTeam : t));
+      setError('');
+      return { success: true, data: updatedTeam };
+    } catch (error) {
+      console.error('[v0] Erro ao atualizar equipe:', error);
+      if (error.status === 404) {
+        setError('Projeto não encontrado');
+      } else {
+        setError(error.data?.message || 'Erro ao atualizar projeto. Tente novamente.');
+      }
+      return { success: false, error: error.data?.message || 'Erro ao atualizar projeto. Tente novamente.' };
+    }
+  };
+
+  return { teams, loading, error, handleDelete, handleCreate, handleUpdate };
 }

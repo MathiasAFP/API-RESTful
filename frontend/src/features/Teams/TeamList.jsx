@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { useTeams } from './hooks/useTeams';
 import TeamCard from './components/TeamCard';
+import TeamDetails from './components/TeamDetails';
 
 export default function TeamList({ onAddMemberToProject }) {
-  const { teams, loading, error, handleDelete, handleCreate } = useTeams();
+  const { teams, loading, error, handleDelete, handleCreate, handleUpdate } = useTeams();
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ nome: '', descricao: '' });
   const [formErrors, setFormErrors] = useState({});
+  const [selectedTeam, setSelectedTeam] = useState(null);
+  const [editingTeam, setEditingTeam] = useState(null);
 
   const validateForm = () => {
     const newErrors = {};
@@ -99,10 +102,35 @@ export default function TeamList({ onAddMemberToProject }) {
               team={team}
               onDelete={handleDelete}
               onAddMember={onAddMemberToProject}
+              onViewDetails={(team) => setSelectedTeam(team)}
+              onEdit={(team) => {
+                setEditingTeam(team);
+                setSelectedTeam(team);
+              }}
             />
           );
         })}
       </div>
+
+      {selectedTeam && (
+        <TeamDetails
+          team={selectedTeam}
+          startInEditMode={editingTeam !== null}
+          onClose={() => {
+            setSelectedTeam(null);
+            setEditingTeam(null);
+          }}
+          onUpdate={async (id, data) => {
+            const result = await handleUpdate(id, data);
+            if (result.success) {
+              setSelectedTeam(result.data);
+              setEditingTeam(null);
+            }
+            return result;
+          }}
+          onAddMember={onAddMemberToProject}
+        />
+      )}
     </div>
   );
 }

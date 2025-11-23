@@ -1,14 +1,18 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../services/api';
+import TaskDetails from './components/TaskDetails';
 
 export default function TaskList() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({ titulo: '', status: 'pending', membroId: '' });
+  const [formData, setFormData] = useState({ titulo: '', descricao: '', status: 'pending', projetoId: '', membroId: '' });
+  const [selectedTask, setSelectedTask] = useState(null);
   const [error, setError] = useState('');
   const [formErrors, setFormErrors] = useState({});
   const [members, setMembers] = useState([]);
+  const [projetos, setProjetos] = useState([]);
+  const [filteredMembers, setFilteredMembers] = useState([]);
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -33,9 +37,44 @@ export default function TaskList() {
       }
     };
 
+    const fetchProjetos = async () => {
+      try {
+        const data = await api.get('/projetos');
+        setProjetos(data);
+      } catch (error) {
+        console.error('[v0] Erro ao carregar projetos:', error);
+      }
+    };
+
     fetchTasks();
     fetchMembers();
+    fetchProjetos();
   }, []);
+
+  // Filtrar membros quando projetoId mudar
+  useEffect(() => {
+    if (formData.projetoId) {
+      const projetoIdStr = formData.projetoId.toString();
+      const filtered = members.filter(m => {
+        const memberProjetoId = m.projetoId?._id || m.projetoId || m.projetoId?.id;
+        return memberProjetoId?.toString() === projetoIdStr;
+      });
+      setFilteredMembers(filtered);
+      // Limpar membroId se o projeto mudar
+      if (formData.membroId) {
+        const membroStillValid = filtered.some(m => {
+          const memberId = m._id || m.id;
+          return memberId?.toString() === formData.membroId?.toString();
+        });
+        if (!membroStillValid) {
+          setFormData(prev => ({ ...prev, membroId: '' }));
+        }
+      }
+    } else {
+      setFilteredMembers([]);
+      setFormData(prev => ({ ...prev, membroId: '' }));
+    }
+  }, [formData.projetoId, members]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -48,13 +87,28 @@ export default function TaskList() {
     }
 
     try {
-      const newTask = await api.post('/tarefas', {
+      const taskData = {
         titulo: formData.titulo.trim(),
-        status: formData.status,
-        membroId: formData.membroId || undefined
-      });
-      setTasks([...tasks, newTask]);
-      setFormData({ titulo: '', status: 'pending', membroId: '' });
+        status: formData.status
+      };
+      
+      if (formData.descricao && formData.descricao.trim()) {
+        taskData.descricao = formData.descricao.trim();
+      }
+      
+      if (formData.membroId && formData.membroId.trim() && formData.membroId !== '') {
+        taskData.membroId = formData.membroId.trim();
+      }
+
+      console.log('Enviando dados da tarefa:', taskData); // Debug
+      const newTask = await api.post('/tarefas', taskData);
+      console.log('Tarefa retornada do backend:', newTask); // Debug
+      
+      // Recarregar tarefas para garantir que os dados populados estejam corretos
+      const updatedTasks = await api.get('/tarefas');
+      setTasks(updatedTasks);
+      setFormData({ titulo: '', descricao: '', status: 'pending', projetoId: '', membroId: '' });
+      setFilteredMembers([]);
       setShowForm(false);
       setError('');
     } catch (error) {
@@ -108,6 +162,10 @@ export default function TaskList() {
             setShowForm(!showForm);
             setFormErrors({});
             setError('');
+            if (!showForm) {
+              setFormData({ titulo: '', descricao: '', status: 'pending', projetoId: '', membroId: '' });
+              setFilteredMembers([]);
+            }
           }}
           className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
         >
@@ -135,6 +193,16 @@ export default function TaskList() {
             {formErrors.titulo && <p className="text-red-500 text-sm mt-1">{formErrors.titulo}</p>}
           </div>
           <div className="mb-3">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
+            <textarea
+              value={formData.descricao}
+              onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+              rows="3"
+              placeholder="Descrição da tarefa (opcional)"
+            />
+          </div>
+          <div className="mb-3">
             <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
             <select
               value={formData.status}
@@ -147,20 +215,47 @@ export default function TaskList() {
             </select>
           </div>
           <div className="mb-3">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Equipe</label>
+            <select
+              value={formData.projetoId}
+              onChange={(e) => {
+                setFormData({ ...formData, projetoId: e.target.value, membroId: '' });
+              }}
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+            >
+              <option value="">Selecione uma equipe</option>
+              {projetos.map((projeto) => {
+                const projetoId = projeto._id || projeto.id;
+                const projetoIdStr = projetoId?.toString();
+                const projetoNome = projeto.nome || projeto.name;
+                return (
+                  <option key={projetoIdStr} value={projetoIdStr}>
+                    {projetoNome}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+          <div className="mb-3">
             <label className="block text-sm font-medium text-gray-700 mb-1">Membro Responsável (Opcional)</label>
             <select
               value={formData.membroId}
               onChange={(e) => setFormData({ ...formData, membroId: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+              disabled={!formData.projetoId}
+              className={`w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500 ${
+                !formData.projetoId ? 'bg-gray-100 cursor-not-allowed' : ''
+              }`}
             >
-              <option value="">Nenhum membro</option>
-              {members.map((member) => {
+              <option value="">
+                {formData.projetoId ? 'Nenhum membro' : 'Selecione uma equipe primeiro'}
+              </option>
+              {filteredMembers.map((member) => {
                 const memberId = member._id || member.id;
+                const memberIdStr = memberId?.toString();
                 const memberNome = member.nome || member.name;
-                const projetoNome = member.projetoId?.nome || 'N/A';
                 return (
-                  <option key={memberId} value={memberId}>
-                    {memberNome} - {projetoNome}
+                  <option key={memberIdStr} value={memberIdStr}>
+                    {memberNome}
                   </option>
                 );
               })}
@@ -179,20 +274,39 @@ export default function TaskList() {
         {tasks.map((task) => {
           const taskId = task._id || task.id;
           return (
-            <div key={taskId} className="bg-white border border-gray-200 rounded-lg p-4 flex justify-between items-center">
+            <div 
+              key={taskId} 
+              onClick={() => setSelectedTask(task)}
+              className="bg-white border border-gray-200 rounded-lg p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition"
+            >
               <div className="flex-1">
                 <h3 className="font-semibold text-gray-900">{task.titulo || task.title}</h3>
-                {task.membroId && (
-                  <p className="text-sm text-gray-600 mt-1">
-                    <span className="font-medium">Responsável:</span> {task.membroId?.nome || 'N/A'}
-                  </p>
+                {task.membroId && (task.membroId.nome || (typeof task.membroId === 'object' && task.membroId !== null)) ? (
+                  <div className="text-sm text-gray-600 mt-1 space-y-1">
+                    <p>
+                      <span className="font-medium">Responsável:</span> {task.membroId?.nome || 'N/A'}
+                    </p>
+                    {task.membroId?.projetoId && (
+                      <p>
+                        <span className="font-medium">Equipe:</span> {task.membroId.projetoId?.nome || 'N/A'}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 italic mt-1">Sem responsável atribuído</p>
                 )}
-                {task.descricao && <p className="text-sm text-gray-600">{task.descricao}</p>}
+                {task.descricao && (
+                  <p className="text-sm text-gray-600 mt-1 line-clamp-2">{task.descricao}</p>
+                )}
               </div>
               <div className="flex gap-2 ml-4">
                 <select
                   value={task.status}
-                  onChange={(e) => handleStatusChange(taskId, e.target.value)}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    handleStatusChange(taskId, e.target.value);
+                  }}
+                  onClick={(e) => e.stopPropagation()}
                   className="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500"
                 >
                   <option value="pending">Pendente</option>
@@ -200,7 +314,10 @@ export default function TaskList() {
                   <option value="completed">Concluído</option>
                 </select>
                 <button
-                  onClick={() => handleDelete(taskId)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(taskId);
+                  }}
                   className="px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600"
                 >
                   Deletar
@@ -210,6 +327,13 @@ export default function TaskList() {
           );
         })}
       </div>
+
+      {selectedTask && (
+        <TaskDetails
+          task={selectedTask}
+          onClose={() => setSelectedTask(null)}
+        />
+      )}
     </div>
   );
 }

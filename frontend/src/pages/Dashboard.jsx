@@ -19,11 +19,13 @@ export default function Dashboard({ setIsAuthenticated }) {
   const handleAddMemberToProject = (projetoId, projetoNome) => {
     setActiveView('members');
     // Dispara evento para o MemberList pré-selecionar o projeto
+    // Garantir que projetoId seja string
+    const projetoIdStr = projetoId?.toString();
     setTimeout(() => {
       window.dispatchEvent(new CustomEvent('addMemberToProject', { 
-        detail: { projetoId, projetoNome } 
+        detail: { projetoId: projetoIdStr, projetoNome } 
       }));
-    }, 100);
+    }, 200);
   };
 
   const getMainContent = () => {
