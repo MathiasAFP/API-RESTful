@@ -5,9 +5,10 @@ export default function TaskList() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({ titulo: '', status: 'pending' });
+  const [formData, setFormData] = useState({ titulo: '', status: 'pending', membroId: '' });
   const [error, setError] = useState('');
   const [formErrors, setFormErrors] = useState({});
+  const [members, setMembers] = useState([]);
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -23,7 +24,17 @@ export default function TaskList() {
       }
     };
 
+    const fetchMembers = async () => {
+      try {
+        const data = await api.get('/membros');
+        setMembers(data);
+      } catch (error) {
+        console.error('[v0] Erro ao carregar membros:', error);
+      }
+    };
+
     fetchTasks();
+    fetchMembers();
   }, []);
 
   const handleSubmit = async (e) => {
@@ -39,10 +50,11 @@ export default function TaskList() {
     try {
       const newTask = await api.post('/tarefas', {
         titulo: formData.titulo.trim(),
-        status: formData.status
+        status: formData.status,
+        membroId: formData.membroId || undefined
       });
       setTasks([...tasks, newTask]);
-      setFormData({ titulo: '', status: 'pending' });
+      setFormData({ titulo: '', status: 'pending', membroId: '' });
       setShowForm(false);
       setError('');
     } catch (error) {
@@ -123,6 +135,7 @@ export default function TaskList() {
             {formErrors.titulo && <p className="text-red-500 text-sm mt-1">{formErrors.titulo}</p>}
           </div>
           <div className="mb-3">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
             <select
               value={formData.status}
               onChange={(e) => setFormData({ ...formData, status: e.target.value })}
@@ -131,6 +144,26 @@ export default function TaskList() {
               <option value="pending">Pendente</option>
               <option value="in_progress">Em Progresso</option>
               <option value="completed">Concluído</option>
+            </select>
+          </div>
+          <div className="mb-3">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Membro Responsável (Opcional)</label>
+            <select
+              value={formData.membroId}
+              onChange={(e) => setFormData({ ...formData, membroId: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+            >
+              <option value="">Nenhum membro</option>
+              {members.map((member) => {
+                const memberId = member._id || member.id;
+                const memberNome = member.nome || member.name;
+                const projetoNome = member.projetoId?.nome || 'N/A';
+                return (
+                  <option key={memberId} value={memberId}>
+                    {memberNome} - {projetoNome}
+                  </option>
+                );
+              })}
             </select>
           </div>
           <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
@@ -149,6 +182,11 @@ export default function TaskList() {
             <div key={taskId} className="bg-white border border-gray-200 rounded-lg p-4 flex justify-between items-center">
               <div className="flex-1">
                 <h3 className="font-semibold text-gray-900">{task.titulo || task.title}</h3>
+                {task.membroId && (
+                  <p className="text-sm text-gray-600 mt-1">
+                    <span className="font-medium">Responsável:</span> {task.membroId?.nome || 'N/A'}
+                  </p>
+                )}
                 {task.descricao && <p className="text-sm text-gray-600">{task.descricao}</p>}
               </div>
               <div className="flex gap-2 ml-4">

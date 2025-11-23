@@ -16,16 +16,26 @@ export default function Dashboard({ setIsAuthenticated }) {
     navigate('/login');
   };
 
+  const handleAddMemberToProject = (projetoId, projetoNome) => {
+    setActiveView('members');
+    // Dispara evento para o MemberList pré-selecionar o projeto
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('addMemberToProject', { 
+        detail: { projetoId, projetoNome } 
+      }));
+    }, 100);
+  };
+
   const getMainContent = () => {
     switch(activeView) {
       case 'teams':
-        return <TeamList />;
+        return <TeamList onAddMemberToProject={handleAddMemberToProject} />;
       case 'members':
         return <MemberList />;
       case 'tasks':
         return <TaskList />;
       default:
-        return <TeamList />;
+        return <TeamList onAddMemberToProject={handleAddMemberToProject} />;
     }
   };
 

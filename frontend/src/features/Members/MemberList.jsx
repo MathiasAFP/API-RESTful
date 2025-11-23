@@ -10,6 +10,17 @@ export default function MemberList() {
   const [projetos, setProjetos] = useState([]);
 
   useEffect(() => {
+    const handleAddMemberToProject = (event) => {
+      const { projetoId, projetoNome } = event.detail;
+      setFormData({ nome: '', projetoId });
+      setShowForm(true);
+    };
+
+    window.addEventListener('addMemberToProject', handleAddMemberToProject);
+    return () => window.removeEventListener('addMemberToProject', handleAddMemberToProject);
+  }, []);
+
+  useEffect(() => {
     const fetchProjetos = async () => {
       try {
         const data = await api.get('/projetos');

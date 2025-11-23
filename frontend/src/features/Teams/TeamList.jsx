@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTeams } from './hooks/useTeams';
 import TeamCard from './components/TeamCard';
 
-export default function TeamList() {
+export default function TeamList({ onAddMemberToProject }) {
   const { teams, loading, error, handleDelete, handleCreate } = useTeams();
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ nome: '', descricao: '' });
@@ -93,7 +93,14 @@ export default function TeamList() {
         )}
         {teams.map((team) => {
           const teamId = team._id || team.id;
-          return <TeamCard key={teamId} team={team} onDelete={handleDelete} />;
+          return (
+            <TeamCard
+              key={teamId}
+              team={team}
+              onDelete={handleDelete}
+              onAddMember={onAddMemberToProject}
+            />
+          );
         })}
       </div>
     </div>

@@ -5,7 +5,7 @@ module.exports = {
     const result = await usuarioService.registrar(req.body);
     if (!result) return res.status(400).json({ message: "Usuário já existe" });
 
-    res.json(result);
+    res.status(201).json(result);
   },
 
   async login(req, res) {
