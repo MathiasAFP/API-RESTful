@@ -3,15 +3,35 @@ import { useTeams } from './hooks/useTeams';
 import TeamCard from './components/TeamCard';
 
 export default function TeamList() {
-  const { teams, loading, handleDelete, handleCreate } = useTeams();
+  const { teams, loading, error, handleDelete, handleCreate } = useTeams();
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({ name: '', description: '' });
+  const [formData, setFormData] = useState({ nome: '', descricao: '' });
+  const [formErrors, setFormErrors] = useState({});
 
-  const handleSubmit = (e) => {
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.nome || formData.nome.trim().length === 0) {
+      newErrors.nome = 'Nome é obrigatório';
+    } else if (formData.nome.trim().length < 2) {
+      newErrors.nome = 'Nome deve ter pelo menos 2 caracteres';
+    }
+
+    setFormErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (formData.name.trim()) {
-      handleCreate(formData);
-      setFormData({ name: '', description: '' });
+    setFormErrors({});
+
+    if (!validateForm()) {
+      return;
+    }
+
+    const result = await handleCreate(formData);
+    if (result.success) {
+      setFormData({ nome: '', descricao: '' });
       setShowForm(false);
     }
   };
@@ -23,29 +43,44 @@ export default function TeamList() {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Equipes</h2>
         <button
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => {
+            setShowForm(!showForm);
+            setFormErrors({});
+          }}
           className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
         >
           + Nova Equipe
         </button>
       </div>
 
+      {error && <div className="bg-red-100 text-red-700 p-3 rounded mb-4">{error}</div>}
+
       {showForm && (
         <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-lg p-4 mb-6">
-          <input
-            type="text"
-            placeholder="Nome da equipe"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded mb-3 focus:outline-none focus:border-blue-500"
-          />
-          <input
-            type="text"
-            placeholder="Descrição"
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded mb-3 focus:outline-none focus:border-blue-500"
-          />
+          <div className="mb-3">
+            <input
+              type="text"
+              placeholder="Nome da equipe"
+              value={formData.nome}
+              onChange={(e) => {
+                setFormData({ ...formData, nome: e.target.value });
+                if (formErrors.nome) setFormErrors({ ...formErrors, nome: '' });
+              }}
+              className={`w-full px-3 py-2 border rounded ${
+                formErrors.nome ? 'border-red-500' : 'border-gray-300 focus:border-blue-500'
+              } focus:outline-none`}
+            />
+            {formErrors.nome && <p className="text-red-500 text-sm mt-1">{formErrors.nome}</p>}
+          </div>
+          <div className="mb-3">
+            <input
+              type="text"
+              placeholder="Descrição"
+              value={formData.descricao}
+              onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+            />
+          </div>
           <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
             Criar
           </button>
@@ -53,9 +88,13 @@ export default function TeamList() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {teams.map((team) => (
-          <TeamCard key={team.id} team={team} onDelete={handleDelete} />
-        ))}
+        {teams.length === 0 && !loading && (
+          <div className="col-span-full text-center py-8 text-gray-500">Nenhum projeto encontrado</div>
+        )}
+        {teams.map((team) => {
+          const teamId = team._id || team.id;
+          return <TeamCard key={teamId} team={team} onDelete={handleDelete} />;
+        })}
       </div>
     </div>
   );

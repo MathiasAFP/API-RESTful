@@ -1,37 +1,37 @@
 import { useState } from 'react';
-import { apiClient } from '../utils/api-client';
+import { api } from '../services/api';
 
 export function useAuth() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const login = async (email, password) => {
+  const login = async (email, senha) => {
     setLoading(true);
     setError(null);
     try {
-      const data = await apiClient.post('/auth/login', { email, password });
+      const data = await api.post('/usuario/login', { email, senha });
       localStorage.setItem('token', data.token);
-      setUser(data.user);
+      setUser(data.usuario);
       return data;
     } catch (err) {
-      setError(err.message);
+      setError(err.data?.message || err.message);
       throw err;
     } finally {
       setLoading(false);
     }
   };
 
-  const register = async (name, email, password) => {
+  const register = async (nome, email, senha) => {
     setLoading(true);
     setError(null);
     try {
-      const data = await apiClient.post('/auth/register', { name, email, password });
+      const data = await api.post('/usuario/registro', { nome, email, senha });
       localStorage.setItem('token', data.token);
-      setUser(data.user);
+      setUser(data.usuario);
       return data;
     } catch (err) {
-      setError(err.message);
+      setError(err.data?.message || err.message);
       throw err;
     } finally {
       setLoading(false);

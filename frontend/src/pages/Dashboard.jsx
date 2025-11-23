@@ -2,14 +2,17 @@ import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Sidebar from '../components/Sidebar';
 import TeamList from '../features/Teams/TeamList';
+import MemberList from '../features/Members/MemberList';
+import TaskList from '../features/Tasks/TaskList';
 import { useState } from 'react';
 
-export default function Dashboard() {
+export default function Dashboard({ setIsAuthenticated }) {
   const navigate = useNavigate();
   const [activeView, setActiveView] = useState('teams');
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    setIsAuthenticated(false);
     navigate('/login');
   };
 
@@ -18,9 +21,9 @@ export default function Dashboard() {
       case 'teams':
         return <TeamList />;
       case 'members':
-        return <div className="p-6"><h2 className="text-2xl font-bold">Membros</h2></div>;
+        return <MemberList />;
       case 'tasks':
-        return <div className="p-6"><h2 className="text-2xl font-bold">Tarefas</h2></div>;
+        return <TaskList />;
       default:
         return <TeamList />;
     }
