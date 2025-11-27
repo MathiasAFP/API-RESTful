@@ -3,8 +3,8 @@ const Membros = require("../models/membros.models");
 const mongoose = require("mongoose");
 
 module.exports = {
-  async listar() {
-    return await Tarefas.find()
+  async listar(usuarioId) {
+    return await Tarefas.find({ usuarioId })
       .populate({
         path: "membroId",
         select: "nome projetoId",
@@ -15,8 +15,8 @@ module.exports = {
       });
   },
 
-  async criar({ titulo, descricao, status, membroId }) {
-    const tarefaData = { titulo, status };
+  async criar({ titulo, descricao, status, membroId, usuarioId }) {
+    const tarefaData = { titulo, status, usuarioId };
     if (descricao && descricao.trim()) tarefaData.descricao = descricao.trim();
     
     // Validar e converter membroId para ObjectId se necessário
@@ -47,8 +47,8 @@ module.exports = {
     return tarefaPopulada;
   },
 
-  async atualizar(id, status) {
-    return await Tarefas.findByIdAndUpdate(id, { status }, { new: true })
+  async atualizar(id, status, usuarioId) {
+    return await Tarefas.findOneAndUpdate({ _id: id, usuarioId }, { status }, { new: true })
       .populate({
         path: "membroId",
         select: "nome projetoId",
@@ -59,7 +59,7 @@ module.exports = {
       });
   },
 
-  async deletar(id) {
-    return await Tarefas.findByIdAndDelete(id);
+  async deletar(id, usuarioId) {
+    return await Tarefas.findOneAndDelete({ _id: id, usuarioId });
   }
 };
