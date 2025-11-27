@@ -15,15 +15,38 @@ module.exports = {
       });
   },
 
+  async buscarPorId(id, usuarioId) {
+    return await Tarefas.findOne({ _id: id, usuarioId })
+      .populate({
+        path: "membroId",
+        select: "nome projetoId",
+        populate: {
+          path: "projetoId",
+          select: "nome"
+        }
+      });
+  },
+
   async criar({ titulo, descricao, status, membroId, usuarioId }) {
-    const tarefaData = { titulo, status, usuarioId };
-    if (descricao && descricao.trim()) tarefaData.descricao = descricao.trim();
+
+    if (!titulo || !titulo.trim()) {
+      throw new Error("Título é obrigatório");
+    }
+
+    const tarefaData = { titulo: titulo.trim(), usuarioId };
     
-    // Validar e converter membroId para ObjectId se necessário
+    if (descricao && descricao.trim()) {
+      tarefaData.descricao = descricao.trim();
+    }
+    
+    if (status) {
+      tarefaData.status = status;
+    }
+    
     if (membroId) {
       const membroIdStr = membroId.toString().trim();
       if (membroIdStr !== '' && mongoose.Types.ObjectId.isValid(membroIdStr)) {
-        // Verificar se o membro existe antes de atribuir
+
         const membro = await Membros.findById(membroIdStr);
         if (membro) {
           tarefaData.membroId = new mongoose.Types.ObjectId(membroIdStr);
@@ -33,7 +56,6 @@ module.exports = {
     
     const tarefa = await Tarefas.create(tarefaData);
     
-    // Fazer populate imediatamente após criar
     const tarefaPopulada = await Tarefas.findById(tarefa._id)
       .populate({
         path: "membroId",
@@ -47,8 +69,39 @@ module.exports = {
     return tarefaPopulada;
   },
 
-  async atualizar(id, status, usuarioId) {
-    return await Tarefas.findOneAndUpdate({ _id: id, usuarioId }, { status }, { new: true })
+  async atualizar(id, dados, usuarioId) {
+    const updateData = {};
+    
+    if (dados.titulo !== undefined) {
+      if (!dados.titulo || !dados.titulo.trim()) {
+        throw new Error("Título não pode ser vazio");
+      }
+      updateData.titulo = dados.titulo.trim();
+    }
+    
+    if (dados.descricao !== undefined) {
+      updateData.descricao = dados.descricao ? dados.descricao.trim() : null;
+    }
+    
+    if (dados.status !== undefined) {
+      updateData.status = dados.status;
+    }
+    
+    if (dados.membroId !== undefined) {
+      if (dados.membroId) {
+        const membroIdStr = dados.membroId.toString().trim();
+        if (membroIdStr !== '' && mongoose.Types.ObjectId.isValid(membroIdStr)) {
+          const membro = await Membros.findById(membroIdStr);
+          if (membro) {
+            updateData.membroId = new mongoose.Types.ObjectId(membroIdStr);
+          }
+        }
+      } else {
+        updateData.membroId = null;
+      }
+    }
+    
+    return await Tarefas.findOneAndUpdate({ _id: id, usuarioId }, updateData, { new: true })
       .populate({
         path: "membroId",
         select: "nome projetoId",
